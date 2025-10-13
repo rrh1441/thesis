@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Thesis — Paper-Trading Brokerage Prototype
+
+Thesis turns any “I think…” into an investable simulation. Users describe a belief, receive AI-generated implications, optionally save the output, and paper-trade suggested positions backed by live market data.
+
+## Feature Highlights
+
+- **Natural-language thesis intake** with structured OpenAI prompts returning JSON-aligned trade suggestions.
+- **AI alignment view** summarising sectors, long/short baskets, rationale, confidence notes, and macro signals.
+- **Research brief on demand** (pros/cons, counter-theses, historical analogues) generated after you save or reuse the summary.
+- **Paper trading simulator** to size positions, record entries, and monitor simulated P/L per thesis.
+- **Community feed** showcasing trending theses, aggregate performance, and creator attribution.
+- **Supabase-backed storage** with permissive row-level security policies and schema migrations.
+
+## Stack
+
+| Layer        | Tech                                                      |
+| ------------ | --------------------------------------------------------- |
+| Frontend     | Next.js App Router, React 18, Tailwind (custom UI kit)    |
+| AI           | OpenAI Responses API (`gpt-4.1` JSON schema mode)         |
+| Data         | Supabase (Postgres + row-level security)                  |
+| Market Data  | Polygon.io or Finnhub (pluggable)                         |
+| Analytics    | (stub) ready for PostHog/Plausible integration            |
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Copy environment variables**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```bash
+   cp .env.example .env.local
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   Fill in:
 
-## Learn More
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (server-only, for admin APIs)
+   - `OPENAI_API_KEY`
+   - `POLYGON_API_KEY` or `FINNHUB_API_KEY`
 
-To learn more about Next.js, take a look at the following resources:
+3. **Supabase setup**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npx supabase login
+   npx supabase init
+   npx supabase db push
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   The migration files live in `supabase/migrations/`. They create tables for `users`, `theses`, `paper_trades`, and supporting enums/policies.
 
-## Deploy on Vercel
+4. **Run the dev server**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```bash
+   npm run dev
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   App boots on [http://localhost:3000](http://localhost:3000).
+
+## Key Directories
+
+- `src/app/api/*` — Route handlers for AI alignment, thesis review, community feed, and paper-trading CRUD.
+- `src/components/thesis/thesis-workbench.tsx` — Core UX flow: intake, results, save gating, paper trades.
+- `src/lib/*` — OpenAI prompts, Supabase admin helper, market data fetchers.
+- `supabase/migrations/` — Postgres schema, row-level security, enum definitions.
+- `docs/` — PRD (`agents.md`) and future architecture/prompt documentation.
+
+## Prompt Spec
+
+Structured prompt schemas live in `src/lib/prompts.ts`:
+
+- **Alignment Prompt** → `THESIS_ALIGNMENT_SCHEMA` returns thesis summary, sectors, long/short baskets, rationale, and confidence notes.
+- **Review Prompt** → `THESIS_REVIEW_SCHEMA` returns pros/cons, related themes, counter theses, and a confidence level.
+
+Both prompts run with `gpt-4.1` using medium reasoning effort and JSON schema enforcement for deterministic parsing.
+
+## Paper Trading Model
+
+- `POST /api/paper-trades` writes trades against a thesis (no auth / ownership checks yet).
+- `GET /api/paper-trades?thesis_id=...` pulls trades for a thesis. Client-side refresh hits the API endpoint.
+- Trades default to static P/L; plug in live price refreshes by updating `current_price`/`pnl` via cron or Edge function.
+
+## Operational Notes
+
+- **Auth**: Disabled for now. All Supabase tables have permissive policies so the app runs locally without JWTs. Swap in BetterAuth (or any provider) and tighten RLS when you’re ready.
+- **Market data**: When API keys are missing, the UI gracefully informs the user (quotes list stays empty).
+- **Community feed**: Requires service-role Supabase key; falls back to an empty state if not available.
+- **Analytics**: Instrumentation surfaces are marked but disabled by default; integrate PostHog/Plausible when ready.
+
+## Scripts
+
+| Command          | Purpose                           |
+| ---------------- | --------------------------------- |
+| `npm run dev`    | Start local dev server            |
+| `npm run build`  | Build for production              |
+| `npm run lint`   | ESLint (Next config)              |
+| `npm run start`  | Run production build locally      |
+
+## Roadmap
+
+- Live brokerage integration (Alpaca/DriveWealth adapters)
+- Confidence visualization and alerting
+- AI-generated contrarian theses & macro dashboards
+- Expanded community social features (follow, comment, share)
+
+---
+
+Built for thesis-driven investors who want to validate ideas safely before ever risking capital. Paper trading only — **not financial advice**.

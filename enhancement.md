@@ -1,0 +1,1 @@
+check prediction markets too. Can hedge risk against multiple pools
