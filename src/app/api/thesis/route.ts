@@ -3,6 +3,12 @@ import { z } from 'zod';
 
 import { fetchQuotes } from '@/lib/market-data';
 import { generateThesisAlignment } from '@/lib/thesis';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import {
+  sanitizeThesisInput,
+  ThesisInjectionDetectedError,
+  ThesisValidationError,
+} from '@/lib/thesis-guards';
 
 const requestSchema = z.object({
   text: z
@@ -15,7 +21,19 @@ export async function POST(request: Request) {
     const json = await request.json();
     const { text } = requestSchema.parse(json);
 
-    const alignment = await generateThesisAlignment(text);
+     const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+     const cfConnectingIp = request.headers.get('cf-connecting-ip');
+     const clientId = forwardedFor || cfConnectingIp || 'anonymous';
+
+     if (!enforceRateLimit(`thesis:${clientId}`, 60_000)) {
+       return NextResponse.json(
+         { error: 'You can analyze once per minute. Please wait a bit before trying again.' },
+         { status: 429 }
+       );
+     }
+
+    const safeText = sanitizeThesisInput(text);
+    const alignment = await generateThesisAlignment(safeText);
     const uniqueSymbols = [
       ...new Set([
         ...alignment.tickers_long.map((item) => item.symbol),
@@ -38,6 +56,14 @@ export async function POST(request: Request) {
         { error: error.issues[0]?.message ?? 'Invalid request' },
         { status: 422 }
       );
+    }
+
+    if (error instanceof ThesisInjectionDetectedError) {
+      return NextResponse.json({ error: error.message }, { status: 422 });
+    }
+
+    if (error instanceof ThesisValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 422 });
     }
 
     return NextResponse.json(
