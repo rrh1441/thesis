@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 import { fetchQuotes } from '@/lib/market-data';
 import { generateThesisAlignment } from '@/lib/thesis';
-import { enforceThesisCooldown } from '@/lib/rate-limit';
 import {
   sanitizeThesisInput,
   ThesisInjectionDetectedError,
@@ -20,20 +19,6 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
     const { text } = requestSchema.parse(json);
-
-    const throttle = enforceThesisCooldown(60_000);
-
-    if (!throttle.ok) {
-      return NextResponse.json(
-        { error: 'You can analyze once per minute. Please wait a bit before trying again.' },
-        {
-          status: 429,
-          headers: throttle.retryAfter
-            ? { 'Retry-After': Math.ceil(throttle.retryAfter / 1000).toString() }
-            : undefined,
-        }
-      );
-    }
 
     const safeText = sanitizeThesisInput(text);
     const alignment = await generateThesisAlignment(safeText);
