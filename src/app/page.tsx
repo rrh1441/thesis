@@ -75,13 +75,21 @@ export default function Home() {
     [router]
   );
 
-  const handleHeroSubmit = useCallback(() => {
-    handleNavigate(belief, true);
-  }, [belief, handleNavigate]);
+  const handleHeroSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      handleNavigate(belief, true);
+    },
+    [belief, handleNavigate]
+  );
 
-  const handleFooterSubmit = useCallback(() => {
-    handleNavigate(footerBelief, true);
-  }, [footerBelief, handleNavigate]);
+  const handleFooterSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      handleNavigate(footerBelief, true);
+    },
+    [footerBelief, handleNavigate]
+  );
 
   return (
     <div className="min-h-screen bg-[#050505] font-sans text-[#F4F4F5] antialiased">
@@ -92,50 +100,43 @@ export default function Home() {
         <div className="relative z-10 w-full max-w-4xl">
           <div className="space-y-8">
             {/* Input + CTA */}
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-                <div className="flex flex-1 items-center gap-3">
-                  <span className="whitespace-nowrap text-3xl font-light tracking-tight text-[#A1A1AA] lg:text-5xl">
-                    I think
-                  </span>
-                  <input
-                    type="text"
-                    value={belief}
-                    onChange={(event) => setBelief(event.target.value)}
-                    onFocus={() => setFocusedInput(true)}
-                    onBlur={() => setFocusedInput(false)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        handleHeroSubmit();
-                      }
-                    }}
-                    placeholder="the economy is going to get better"
-                    className={`flex-1 bg-transparent px-4 py-4 text-2xl font-light text-white outline-none transition-all duration-300 placeholder:text-[#3F3F46] lg:text-3xl ${
-                      focusedInput
-                        ? 'border-b-2 border-[#4ADE80] shadow-[0_4px_20px_rgba(74,222,128,0.15)]'
-                        : 'border-b-2 border-[#27272A]'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col items-start gap-4">
-                <button
-                  type="button"
-                  onClick={handleHeroSubmit}
-                  className="group rounded-lg bg-[#4ADE80] px-8 py-4 text-lg font-medium text-[#050505] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#3DBD6E] hover:shadow-[0_8px_30px_rgba(74,222,128,0.4)]"
-                >
-                  Turn beliefs into investments
-                  <span className="ml-2 inline-block transition-transform duration-200 group-hover:translate-x-1">
-                    →
-                  </span>
-                </button>
-                <p className="text-sm tracking-wide text-[#71717A]">
-                  Paper trading only. No brokerage access required.
-                </p>
+          <form className="space-y-6" onSubmit={handleHeroSubmit} spellCheck={false}>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+              <div className="flex flex-1 items-center gap-3">
+                <span className="whitespace-nowrap text-3xl font-light tracking-tight text-[#A1A1AA] lg:text-5xl">
+                  I think
+                </span>
+                <input
+                  type="text"
+                  value={belief}
+                  onChange={(event) => setBelief(event.target.value)}
+                  onFocus={() => setFocusedInput(true)}
+                  onBlur={() => setFocusedInput(false)}
+                  placeholder="the economy is going to get better"
+                  className={`flex-1 bg-transparent px-4 py-4 text-2xl font-light text-white outline-none transition-all duration-300 placeholder:text-[#3F3F46] lg:text-3xl ${
+                    focusedInput
+                      ? 'border-b-2 border-[#4ADE80] shadow-[0_4px_20px_rgba(74,222,128,0.15)]'
+                      : 'border-b-2 border-[#27272A]'
+                  }`}
+                />
               </div>
             </div>
+
+            <div className="flex flex-col items-start gap-4">
+              <button
+                  type="submit"
+                  className="group rounded-lg bg-[#4ADE80] px-8 py-4 text-lg font-medium text-[#050505] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#3DBD6E] hover:shadow-[0_8px_30px_rgba(74,222,128,0.4)]"
+              >
+                Turn beliefs into investments
+                <span className="ml-2 inline-block transition-transform duration-200 group-hover:translate-x-1">
+                  →
+                </span>
+              </button>
+              <p className="text-sm tracking-wide text-[#71717A]">
+                Paper trading only. No brokerage access required.
+              </p>
+            </div>
+          </form>
 
             <div className="mt-16 h-px bg-gradient-to-r from-transparent via-[#27272A] to-transparent opacity-50" />
           </div>
@@ -305,7 +306,7 @@ export default function Home() {
       {/* Footer CTA */}
       <section className="border-t border-[#18181B] px-6 py-24">
         <div className="mx-auto w-full max-w-4xl">
-          <div className="mb-16 flex flex-col gap-4 lg:flex-row lg:items-center">
+          <form className="mb-16 flex flex-col gap-4 lg:flex-row lg:items-center" onSubmit={handleFooterSubmit}>
             <div className="flex flex-1 items-center gap-3">
               <span className="whitespace-nowrap text-2xl font-light tracking-tight text-[#A1A1AA] lg:text-3xl">
                 I think
@@ -314,24 +315,17 @@ export default function Home() {
                 type="text"
                 value={footerBelief}
                 onChange={(event) => setFooterBelief(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handleFooterSubmit();
-                  }
-                }}
                 placeholder="your next big thesis…"
                 className="flex-1 border-b border-[#27272A] bg-transparent px-4 py-3 text-xl font-light text-white outline-none transition-colors duration-300 placeholder:text-[#3F3F46] focus:border-[#4ADE80] lg:text-2xl"
               />
             </div>
             <button
-              type="button"
-              onClick={handleFooterSubmit}
+              type="submit"
               className="rounded-lg bg-[#4ADE80] px-8 py-3 text-base font-medium text-[#050505] transition-all duration-200 hover:bg-[#3DBD6E] hover:shadow-[0_8px_30px_rgba(74,222,128,0.4)]"
             >
               Start testing
             </button>
-          </div>
+          </form>
 
           <div className="flex flex-wrap items-center justify-between gap-8 border-t border-[#18181B] pt-8 text-sm text-[#71717A]">
             <div className="flex flex-wrap items-center gap-6">
