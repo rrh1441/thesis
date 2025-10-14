@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { fetchQuotes } from '@/lib/market-data';
 import { generateThesisAlignment } from '@/lib/thesis';
-import { enforceRateLimit } from '@/lib/rate-limit';
+import { enforceRateLimit, generateClientKey } from '@/lib/rate-limit';
 import {
   sanitizeThesisInput,
   ThesisInjectionDetectedError,
@@ -21,16 +21,20 @@ export async function POST(request: Request) {
     const json = await request.json();
     const { text } = requestSchema.parse(json);
 
-     const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-     const cfConnectingIp = request.headers.get('cf-connecting-ip');
-     const clientId = forwardedFor || cfConnectingIp || 'anonymous';
+    const clientKey = generateClientKey(request, 'thesis');
+    const rateLimit = enforceRateLimit(clientKey, 1, 60_000);
 
-     if (!enforceRateLimit(`thesis:${clientId}`, 60_000)) {
-       return NextResponse.json(
-         { error: 'You can analyze once per minute. Please wait a bit before trying again.' },
-         { status: 429 }
-       );
-     }
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: 'You can analyze once per minute. Please wait a bit before trying again.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil(rateLimit.retryAfter / 1000).toString(),
+          },
+        }
+      );
+    }
 
     const safeText = sanitizeThesisInput(text);
     const alignment = await generateThesisAlignment(safeText);
