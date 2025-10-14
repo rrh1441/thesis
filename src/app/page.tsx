@@ -59,22 +59,28 @@ export default function Home() {
   const [footerBelief, setFooterBelief] = useState('');
 
   const handleNavigate = useCallback(
-    (value: string) => {
+    (value: string, shouldAutoSubmit: boolean) => {
       const trimmed = value.trim();
-      const target = trimmed
-        ? `/simulate?prefill=${encodeURIComponent(trimmed)}`
-        : '/simulate';
-      router.push(target);
+      if (!trimmed) {
+        return;
+      }
+
+      const params = new URLSearchParams({ prefill: trimmed });
+      if (shouldAutoSubmit) {
+        params.set('auto', '1');
+      }
+
+      router.push(`/simulate?${params.toString()}`);
     },
     [router]
   );
 
   const handleHeroSubmit = useCallback(() => {
-    handleNavigate(belief);
+    handleNavigate(belief, true);
   }, [belief, handleNavigate]);
 
   const handleFooterSubmit = useCallback(() => {
-    handleNavigate(footerBelief);
+    handleNavigate(footerBelief, true);
   }, [footerBelief, handleNavigate]);
 
   return (

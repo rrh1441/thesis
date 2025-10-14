@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, ArrowRight, BrainCircuit, Flame, Layers } from 'lucide-react';
 
 import type { ThesisAlignment, ThesisReview } from '@/lib/thesis';
@@ -17,9 +17,10 @@ interface ThesisResponse {
 
 type ThesisWorkbenchProps = {
   initialThesis?: string;
+  autoSubmit?: boolean;
 };
 
-export function ThesisWorkbench({ initialThesis }: ThesisWorkbenchProps) {
+export function ThesisWorkbench({ initialThesis, autoSubmit = false }: ThesisWorkbenchProps) {
   const [thesisText, setThesisText] = useState(initialThesis ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export function ThesisWorkbench({ initialThesis }: ThesisWorkbenchProps) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [review, setReview] = useState<ThesisReview | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [autoSubmitted, setAutoSubmitted] = useState(false);
 
   const primarySymbol =
     analysis?.thesis.tickers_long[0]?.symbol ??
@@ -36,21 +38,13 @@ export function ThesisWorkbench({ initialThesis }: ThesisWorkbenchProps) {
     '';
   const primaryQuote = analysis?.quotes.find((quote) => quote.symbol === primarySymbol);
 
-  useEffect(() => {
-    if (!initialThesis) {
+  const analyzeThesis = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      setError('Provide a thesis to analyze.');
       return;
     }
 
-    setThesisText(initialThesis);
-    requestAnimationFrame(() => {
-      const target = document.getElementById('thesis-workbench');
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    // Scroll once when prefilled from the hero.
-  }, [initialThesis]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
     setLoading(true);
     setError(null);
     setAnalysis(null);
@@ -63,7 +57,7 @@ export function ThesisWorkbench({ initialThesis }: ThesisWorkbenchProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: thesisText }),
+        body: JSON.stringify({ text: trimmed }),
       });
 
       if (!response.ok) {
@@ -78,6 +72,35 @@ export function ThesisWorkbench({ initialThesis }: ThesisWorkbenchProps) {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!initialThesis) {
+      setAutoSubmitted(false);
+      return;
+    }
+
+    setThesisText(initialThesis);
+    setAutoSubmitted(false);
+    requestAnimationFrame(() => {
+      const target = document.getElementById('thesis-workbench');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    // Scroll once when prefilled from the hero.
+  }, [initialThesis]);
+
+  useEffect(() => {
+    if (!autoSubmit || !initialThesis || autoSubmitted) {
+      return;
+    }
+
+    setAutoSubmitted(true);
+    void analyzeThesis(initialThesis);
+  }, [autoSubmit, autoSubmitted, analyzeThesis, initialThesis]);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void analyzeThesis(thesisText);
   };
 
   const handleSaveThesis = async () => {
