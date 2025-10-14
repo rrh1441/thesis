@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { fetchQuotes } from '@/lib/market-data';
 import { generateThesisAlignment } from '@/lib/thesis';
-import { enforceRateLimit, generateClientKey } from '@/lib/rate-limit';
+import { enforceThesisCooldown } from '@/lib/rate-limit';
 import {
   sanitizeThesisInput,
   ThesisInjectionDetectedError,
@@ -21,17 +21,16 @@ export async function POST(request: Request) {
     const json = await request.json();
     const { text } = requestSchema.parse(json);
 
-    const clientKey = generateClientKey(request, 'thesis');
-    const rateLimit = enforceRateLimit(clientKey, 1, 60_000);
+    const throttle = enforceThesisCooldown(60_000);
 
-    if (!rateLimit.ok) {
+    if (!throttle.ok) {
       return NextResponse.json(
         { error: 'You can analyze once per minute. Please wait a bit before trying again.' },
         {
           status: 429,
-          headers: {
-            'Retry-After': Math.ceil(rateLimit.retryAfter / 1000).toString(),
-          },
+          headers: throttle.retryAfter
+            ? { 'Retry-After': Math.ceil(throttle.retryAfter / 1000).toString() }
+            : undefined,
         }
       );
     }
