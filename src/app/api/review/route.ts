@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { generateThesisReview } from '@/lib/thesis';
+import { query } from '@/lib/db';
 
 const requestSchema = z.object({
   thesis_id: z.string().uuid().optional(),
@@ -17,30 +17,12 @@ export async function POST(request: Request) {
     let thesisSummary = summary;
 
     if (!thesisSummary && thesis_id) {
-      const supabase = getSupabaseAdmin();
+      const rows = await query<{ summary: string | null }>(
+        'SELECT summary FROM theses WHERE id = $1 LIMIT 1',
+        [thesis_id]
+      );
 
-      if (!supabase) {
-        return NextResponse.json(
-          { error: 'Database client not configured.' },
-          { status: 500 }
-        );
-      }
-
-      const { data, error } = await supabase
-        .from('theses')
-        .select('summary')
-        .eq('id', thesis_id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('[api/review] lookup error', error);
-        return NextResponse.json(
-          { error: 'Unable to load thesis summary.' },
-          { status: 400 }
-        );
-      }
-
-      thesisSummary = data?.summary ?? null;
+      thesisSummary = rows[0]?.summary ?? null;
     }
 
     if (!thesisSummary) {

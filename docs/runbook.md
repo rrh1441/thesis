@@ -6,32 +6,23 @@ Create `.env.local` from `.env.example` and set:
 
 | Variable                      | Description                                              |
 | ----------------------------- | -------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`    | Supabase project URL                                     |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key for client requests                  |
-| `SUPABASE_SERVICE_ROLE_KEY`   | (Optional) Service role key for server-side aggregation   |
+| `DATABASE_URL`                | Postgres connection string (e.g. `postgres://...`)       |
 | `OPENAI_API_KEY`              | API key with access to `gpt-4.1` or higher               |
 | `MARKET_DATA_PROVIDER`        | `polygon` (default) or `finnhub`                         |
 | `POLYGON_API_KEY`             | (Optional) Quote streaming for equities                  |
 | `FINNHUB_API_KEY`             | (Optional) Alternative quote source                      |
 
-### Supabase
+### Database
 
-1. Launch Supabase locally (Docker) or point at a hosted project.
+1. Ensure Postgres 14+ is running locally (Docker, Homebrew, etc.).
 
-   ```bash
-   supabase init   # if you haven't already
-   supabase start
-   ```
-
-2. Run migrations:
+2. Apply schema:
 
    ```bash
-   npx supabase db push
+   psql "$DATABASE_URL" -f db/schema.sql
    ```
 
-3. Optional: Seed `theses` table with curated examples for the community feed.
-
-> **Note:** Row-level security policies are currently permissive (`using (true)`), so the app works without any auth/JWT layer.
+3. Optional: Seed `theses` and `paper_trades` with demo rows to light up the community feed.
 
 ### OpenAI Prompts
 
@@ -51,7 +42,7 @@ Both functions live in `src/lib/thesis.ts`.
 | `POST /api/review`     | ❌   | Generate research brief (accepts thesis ID or summary) |
 | `GET/POST /api/theses` | ❌   | List and create theses (user_id is nullable) |
 | `GET/POST /api/paper-trades` | ❌ | Paper trade CRUD without ownership checks |
-| `GET /api/community`   | ⚠️   | Requires Supabase service key for cross-user feed |
+| `GET /api/community`   | ❌   | Aggregated community feed                      |
 
 ### Market Data
 
@@ -60,7 +51,7 @@ Both functions live in `src/lib/thesis.ts`.
 ### Operations
 
 - **Error logging**: Server logs print to stdout (`console.error`). Hook metrics once observability stack is ready.
-- **Deployment**: Set environment variables in Vercel/Render. Service role key should be stored as encrypted secret — never exposed to the client.
+- **Deployment**: Set environment variables in Vercel/Render. Keep `DATABASE_URL` and `OPENAI_API_KEY` in encrypted secrets — never expose them client-side.
 
 ### Next Steps
 

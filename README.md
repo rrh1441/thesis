@@ -9,7 +9,7 @@ Thesis turns any “I think…” into an investable simulation. Users describe 
 - **Research brief on demand** (pros/cons, counter-theses, historical analogues) generated after you save or reuse the summary.
 - **Paper trading simulator** to size positions, record entries, and monitor simulated P/L per thesis.
 - **Community feed** showcasing trending theses, aggregate performance, and creator attribution.
-- **Supabase-backed storage** with permissive row-level security policies and schema migrations.
+- **Postgres-backed storage** with a lean SQL schema and no auth for rapid iteration.
 
 ## Stack
 
@@ -17,7 +17,7 @@ Thesis turns any “I think…” into an investable simulation. Users describe 
 | ------------ | --------------------------------------------------------- |
 | Frontend     | Next.js App Router, React 18, Tailwind (custom UI kit)    |
 | AI           | OpenAI Responses API (`gpt-4.1` JSON schema mode)         |
-| Data         | Supabase (Postgres + row-level security)                  |
+| Data         | Postgres (self-hosted or local)                           |
 | Market Data  | Polygon.io or Finnhub (pluggable)                         |
 | Analytics    | (stub) ready for PostHog/Plausible integration            |
 
@@ -37,20 +37,18 @@ Thesis turns any “I think…” into an investable simulation. Users describe 
 
    Fill in:
 
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (server-only, for admin APIs)
+   - `DATABASE_URL` (Postgres connection string)
    - `OPENAI_API_KEY`
    - `POLYGON_API_KEY` or `FINNHUB_API_KEY`
+   - `MARKET_DATA_PROVIDER` (`polygon` | `finnhub`, defaults to `polygon`)
 
-3. **Supabase setup**
+3. **Database setup**
 
    ```bash
-   npx supabase login
-   npx supabase init
-   npx supabase db push
+   psql "$DATABASE_URL" -f db/schema.sql
    ```
 
-   The migration files live in `supabase/migrations/`. They create tables for `users`, `theses`, `paper_trades`, and supporting enums/policies.
+   The schema file lives in `db/schema.sql`. It creates tables for `users`, `theses`, `paper_trades`, and supporting enums.
 
 4. **Run the dev server**
 
@@ -64,8 +62,8 @@ Thesis turns any “I think…” into an investable simulation. Users describe 
 
 - `src/app/api/*` — Route handlers for AI alignment, thesis review, community feed, and paper-trading CRUD.
 - `src/components/thesis/thesis-workbench.tsx` — Core UX flow: intake, results, save gating, paper trades.
-- `src/lib/*` — OpenAI prompts, Supabase admin helper, market data fetchers.
-- `supabase/migrations/` — Postgres schema, row-level security, enum definitions.
+- `src/lib/*` — OpenAI prompts, database helper, market data fetchers.
+- `db/schema.sql` — Postgres schema for theses and paper trades.
 - `docs/` — PRD (`agents.md`) and future architecture/prompt documentation.
 
 ## Prompt Spec
@@ -85,9 +83,9 @@ Both prompts run with `gpt-4.1` using medium reasoning effort and JSON schema en
 
 ## Operational Notes
 
-- **Auth**: Disabled for now. All Supabase tables have permissive policies so the app runs locally without JWTs. Swap in BetterAuth (or any provider) and tighten RLS when you’re ready.
+- **Auth**: Disabled for now. Tables are wide open so the app runs locally without JWTs. Swap in BetterAuth (or any provider) and tighten policies when you’re ready.
 - **Market data**: When API keys are missing, the UI gracefully informs the user (quotes list stays empty).
-- **Community feed**: Requires service-role Supabase key; falls back to an empty state if not available.
+- **Community feed**: Aggregates directly from Postgres; seed sample theses if you want data on first load.
 - **Analytics**: Instrumentation surfaces are marked but disabled by default; integrate PostHog/Plausible when ready.
 
 ## Scripts

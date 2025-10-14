@@ -15,8 +15,12 @@ interface ThesisResponse {
   quotes: MarketQuote[];
 }
 
-export function ThesisWorkbench() {
-  const [thesisText, setThesisText] = useState('');
+type ThesisWorkbenchProps = {
+  initialThesis?: string;
+};
+
+export function ThesisWorkbench({ initialThesis }: ThesisWorkbenchProps) {
+  const [thesisText, setThesisText] = useState(initialThesis ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ThesisResponse | null>(null);
@@ -31,6 +35,19 @@ export function ThesisWorkbench() {
     analysis?.thesis.tickers_short[0]?.symbol ??
     '';
   const primaryQuote = analysis?.quotes.find((quote) => quote.symbol === primarySymbol);
+
+  useEffect(() => {
+    if (!initialThesis) {
+      return;
+    }
+
+    setThesisText(initialThesis);
+    requestAnimationFrame(() => {
+      const target = document.getElementById('thesis-workbench');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    // Scroll once when prefilled from the hero.
+  }, [initialThesis]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -81,7 +98,6 @@ export function ThesisWorkbench() {
           tickers_long: analysis.thesis.tickers_long,
           tickers_short: analysis.thesis.tickers_short,
           rationale: analysis.thesis.rationale,
-          confidence_level: analysis.thesis.confidence_notes?.[0] ?? null,
         }),
       });
 
@@ -487,7 +503,8 @@ function PaperTradingPanel({
   const [ticker, setTicker] = useState(defaultTicker ?? '');
   const [direction, setDirection] = useState<'long' | 'short'>('long');
   const [quantity, setQuantity] = useState(100);
-  const [entryPrice, setEntryPrice] = useState(defaultPrice ?? 0);
+  const fallbackPrice = defaultPrice && defaultPrice > 0 ? defaultPrice : 1;
+  const [entryPrice, setEntryPrice] = useState(fallbackPrice);
 
   const refreshTrades = async () => {
     setLoading(true);
@@ -520,7 +537,8 @@ function PaperTradingPanel({
 
   useEffect(() => {
     setTicker(defaultTicker ?? '');
-    setEntryPrice(defaultPrice ?? 0);
+    const nextPrice = defaultPrice && defaultPrice > 0 ? defaultPrice : 1;
+    setEntryPrice(nextPrice);
     void refreshTrades();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thesisId, defaultTicker, defaultPrice]);
@@ -550,7 +568,7 @@ function PaperTradingPanel({
 
       setTicker('');
       setQuantity(100);
-      setEntryPrice(0);
+      setEntryPrice(defaultPrice && defaultPrice > 0 ? defaultPrice : 1);
       await refreshTrades();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create trade.');

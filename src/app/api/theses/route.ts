@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { query } from '@/lib/db';
+
+type ThesisRow = {
+  id: string;
+  text: string;
+  summary: string | null;
+  tickers_long: unknown;
+  tickers_short: unknown;
+  rationale: string | null;
+  confidence_level: 'low' | 'medium' | 'high' | null;
+  created_at: string;
+};
 
 const tickerSchema = z.object({
   symbol: z.string(),
@@ -22,23 +33,20 @@ const thesisSchema = z.object({
 
 export async function GET() {
   try {
-    const supabase = getSupabaseAdmin();
+    const rows = await query<Pick<ThesisRow, 'id' | 'text' | 'summary' | 'created_at' | 'confidence_level'>>(
+      `
+        SELECT id,
+               text,
+               summary,
+               created_at,
+               confidence_level
+        FROM theses
+        ORDER BY created_at DESC
+        LIMIT 20
+      `
+    );
 
-    if (!supabase) {
-      return NextResponse.json({ data: [] });
-    }
-
-    const { data, error } = await supabase
-      .from('theses')
-      .select('id, text, summary, created_at, confidence_level')
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
-      throw error;
-    }
-
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: rows });
   } catch (error) {
     console.error('[api/theses] GET failed', error);
     return NextResponse.json(
@@ -50,32 +58,33 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = getSupabaseAdmin();
-
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database client not configured.' },
-        { status: 500 }
-      );
-    }
-
     const json = await request.json();
     const payload = thesisSchema.parse(json);
 
-    const { data, error } = await supabase
-      .from('theses')
-      .insert({
-        ...payload,
-        user_id: null,
-      })
-      .select('id, created_at')
-      .single();
+    const rows = await query<Pick<ThesisRow, 'id' | 'created_at'>>(
+      `
+        INSERT INTO theses (
+          text,
+          summary,
+          tickers_long,
+          tickers_short,
+          rationale,
+          confidence_level
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, created_at
+      `,
+      [
+        payload.text,
+        payload.summary ?? null,
+        payload.tickers_long ? JSON.stringify(payload.tickers_long) : null,
+        payload.tickers_short ? JSON.stringify(payload.tickers_short) : null,
+        payload.rationale ?? null,
+        payload.confidence_level ?? null,
+      ]
+    );
 
-    if (error) {
-      throw error;
-    }
-
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: rows[0] });
   } catch (error) {
     console.error('[api/theses] POST failed', error);
 

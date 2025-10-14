@@ -138,7 +138,7 @@ User submits belief → API pipeline:
 
   * Hypothetical P/L
   * Thesis success rate
-* Stored per user via Supabase or Firebase
+* Stored per user in Postgres (swap in BetterAuth when auth lands)
 
 ---
 
@@ -156,8 +156,8 @@ User submits belief → API pipeline:
 
 | Category                 | Requirement                             | Details                                   |
 | ------------------------ | --------------------------------------- | ----------------------------------------- |
-| **Auth**                 | Supabase Auth (email + OAuth)           | Required for saving & paper trading       |
-| **Database**             | Supabase Postgres                       | Tables: users, theses, trades, portfolios |
+| **Auth**                 | BetterAuth (future)                     | Required once you secure saving/trading   |
+| **Database**             | Postgres (self-hosted or managed)       | Tables: users, theses, trades, portfolios |
 | **AI Integration**       | OpenAI GPT-4o / GPT-5                   | Two endpoints: Alignment & Review         |
 | **Market Data**          | Polygon.io / Finnhub API                | Prices + sectors + symbols                |
 | **Paper Trading Engine** | Local simulation                        | Track prices vs timestamps daily          |
@@ -171,10 +171,10 @@ User submits belief → API pipeline:
 
 | Category        | Requirement                                              |
 | --------------- | -------------------------------------------------------- |
-| **Scalability** | 1 000 DAU minimum on Supabase free tier                  |
+| **Scalability** | Run comfortably on a single Postgres instance initially   |
 | **Latency**     | < 4 s AI response average                                |
 | **Compliance**  | Paper-trade only — include “Not Financial Advice” footer |
-| **Security**    | Secure API key storage via Supabase Vault or .env        |
+| **Security**    | Secure API key storage via secrets manager or `.env`     |
 
 ---
 
@@ -210,10 +210,10 @@ User submits belief → API pipeline:
 | thesis_id     | uuid (FK)        |
 | ticker        | text             |
 | direction     | enum(long/short) |
-| quantity      | numeric          |
-| entry_price   | numeric          |
-| current_price | numeric          |
-| pnl           | numeric          |
+| quantity      | integer          |
+| entry_price   | double precision |
+| current_price | double precision |
+| pnl           | double precision |
 | created_at    | timestamp        |
 
 ---

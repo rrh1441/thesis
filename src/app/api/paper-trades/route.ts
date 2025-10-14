@@ -1,7 +1,40 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { query } from '@/lib/db';
+
+type PaperTradeRow = {
+  id: string;
+  thesis_id: string;
+  ticker: string;
+  direction: 'long' | 'short';
+  quantity: number | string;
+  entry_price: number | string;
+  current_price: number | string | null;
+  pnl: number | string | null;
+  created_at: string;
+};
+
+type NormalizedPaperTrade = Omit<PaperTradeRow, 'quantity' | 'entry_price' | 'current_price' | 'pnl'> & {
+  quantity: number;
+  entry_price: number;
+  current_price: number | null;
+  pnl: number | null;
+};
+
+function normalizeTrade(row: PaperTradeRow): NormalizedPaperTrade {
+  return {
+    ...row,
+    quantity: Number(row.quantity),
+    entry_price: Number(row.entry_price),
+    current_price:
+      row.current_price === null || row.current_price === undefined
+        ? null
+        : Number(row.current_price),
+    pnl:
+      row.pnl === null || row.pnl === undefined ? null : Number(row.pnl),
+  };
+}
 
 const tradeSchema = z.object({
   thesis_id: z.string().uuid(),
@@ -25,26 +58,25 @@ export async function GET(request: Request) {
       );
     }
 
-    const supabase = getSupabaseAdmin();
+    const rows = await query<PaperTradeRow>(
+      `
+        SELECT id,
+               thesis_id,
+               ticker,
+               direction,
+               quantity,
+               entry_price,
+               current_price,
+               pnl,
+               created_at
+        FROM paper_trades
+        WHERE thesis_id = $1
+        ORDER BY created_at DESC
+      `,
+      [thesisId]
+    );
 
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database client not configured.' },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('paper_trades')
-      .select('*')
-      .eq('thesis_id', thesisId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: rows.map(normalizeTrade) });
   } catch (error) {
     console.error('[api/paper-trades] GET failed', error);
     return NextResponse.json(
@@ -57,34 +89,40 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const payload = tradeSchema.parse(await request.json());
-    const supabase = getSupabaseAdmin();
+    const rows = await query<PaperTradeRow>(
+      `
+        INSERT INTO paper_trades (
+          thesis_id,
+          ticker,
+          direction,
+          quantity,
+          entry_price,
+          current_price,
+          pnl
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id,
+                  thesis_id,
+                  ticker,
+                  direction,
+                  quantity,
+                  entry_price,
+                  current_price,
+                  pnl,
+                  created_at
+      `,
+      [
+        payload.thesis_id,
+        payload.ticker.toUpperCase(),
+        payload.direction,
+        payload.quantity,
+        payload.entry_price,
+        payload.current_price ?? payload.entry_price,
+        payload.pnl ?? 0,
+      ]
+    );
 
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database client not configured.' },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('paper_trades')
-      .insert({
-        thesis_id: payload.thesis_id,
-        ticker: payload.ticker.toUpperCase(),
-        direction: payload.direction,
-        quantity: payload.quantity,
-        entry_price: payload.entry_price,
-        current_price: payload.current_price ?? payload.entry_price,
-        pnl: payload.pnl ?? 0,
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: normalizeTrade(rows[0]) });
   } catch (error) {
     console.error('[api/paper-trades] POST failed', error);
 

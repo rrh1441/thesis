@@ -7,7 +7,6 @@ import {
   THESIS_REVIEW_SCHEMA,
   THESIS_REVIEW_SYSTEM_PROMPT,
 } from '@/lib/prompts';
-import type { Database } from '@/types/database';
 
 const thesisAlignmentSchema = z.object({
   thesis_summary: z.string(),
@@ -64,12 +63,10 @@ export async function generateThesisAlignment(userThesis: string) {
 
   const response = await client.responses.create({
     model: 'gpt-4.1',
-    reasoning: { effort: 'medium' },
     temperature: 0.4,
     top_p: 0.9,
-    response_format: {
-      type: 'json_schema',
-      json_schema: THESIS_ALIGNMENT_SCHEMA,
+    text: {
+      format: THESIS_ALIGNMENT_SCHEMA,
     },
     input: [
       { role: 'system', content: THESIS_ALIGNMENT_SYSTEM_PROMPT },
@@ -109,11 +106,9 @@ export async function generateThesisReview(
 
   const response = await client.responses.create({
     model: 'gpt-4.1',
-    reasoning: { effort: 'medium' },
     temperature: 0.3,
-    response_format: {
-      type: 'json_schema',
-      json_schema: THESIS_REVIEW_SCHEMA,
+    text: {
+      format: THESIS_REVIEW_SCHEMA,
     },
     input: [
       { role: 'system', content: THESIS_REVIEW_SYSTEM_PROMPT },
@@ -145,4 +140,14 @@ export async function generateThesisReview(
   return thesisReviewSchema.parse(payload);
 }
 
-export type PaperTrade = Database['public']['Tables']['paper_trades']['Row'];
+export type PaperTrade = {
+  id: string;
+  thesis_id: string;
+  ticker: string;
+  direction: 'long' | 'short';
+  quantity: number;
+  entry_price: number;
+  current_price: number | null;
+  pnl: number | null;
+  created_at: string;
+};

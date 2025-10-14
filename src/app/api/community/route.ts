@@ -1,68 +1,51 @@
 import { NextResponse } from 'next/server';
 
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import type { Database } from '@/types/database';
+import { query } from '@/lib/db';
 
-type CommunityThesisRow = Database['public']['Tables']['theses']['Row'] & {
-  paper_trades: Array<
-    Pick<Database['public']['Tables']['paper_trades']['Row'], 'pnl'>
-  > | null;
-  users: Pick<Database['public']['Tables']['users']['Row'], 'id' | 'name'> | null;
+type CommunityRow = {
+  id: string;
+  text: string;
+  summary: string | null;
+  confidence_level: 'low' | 'medium' | 'high' | null;
+  created_at: string;
+  total_pnl: number;
+  trade_count: number;
+  user_name: string | null;
 };
 
 export async function GET() {
   try {
-    const supabase = getSupabaseAdmin();
-
-    if (!supabase) {
-      return NextResponse.json({ data: [] });
-    }
-
-    const { data, error } = await supabase
-      .from('theses')
-      .select(
-        `
-        id,
-        text,
-        summary,
-        confidence_level,
-        created_at,
-        paper_trades (
-          pnl
-        ),
-        users (
-          id,
-          name
-        )
+    const rows = await query<CommunityRow>(
       `
-      )
-      .order('created_at', { ascending: false })
-      .limit(20);
+        SELECT t.id,
+               t.text,
+               t.summary,
+               t.confidence_level,
+               t.created_at,
+               COALESCE(SUM(pt.pnl), 0) AS total_pnl,
+               COUNT(pt.id) AS trade_count,
+               u.name AS user_name
+        FROM theses t
+        LEFT JOIN paper_trades pt ON pt.thesis_id = t.id
+        LEFT JOIN users u ON u.id = t.user_id
+        GROUP BY t.id, t.text, t.summary, t.confidence_level, t.created_at, u.name
+        ORDER BY t.created_at DESC
+        LIMIT 20
+      `
+    );
 
-    if (error) {
-      throw error;
-    }
+    const data = rows.map((row) => ({
+      id: row.id,
+      text: row.text,
+      summary: row.summary,
+      confidence_level: row.confidence_level,
+      created_at: row.created_at,
+      total_pnl: Number(row.total_pnl ?? 0),
+      trade_count: Number(row.trade_count ?? 0),
+      user_name: row.user_name ?? 'Anonymous analyst',
+    }));
 
-    const enriched = (data as CommunityThesisRow[]).map((item) => {
-      const trades = item.paper_trades ?? [];
-      const totalPnl = trades.reduce(
-        (accumulator, trade) => accumulator + (trade.pnl ?? 0),
-        0
-      );
-
-      return {
-        id: item.id,
-        text: item.text,
-        summary: item.summary,
-        confidence_level: item.confidence_level,
-        created_at: item.created_at,
-        total_pnl: totalPnl,
-        trade_count: trades.length,
-        user_name: item.users?.name ?? 'Anonymous analyst',
-      };
-    });
-
-    return NextResponse.json({ data: enriched });
+    return NextResponse.json({ data });
   } catch (error) {
     console.error('[api/community] GET failed', error);
     return NextResponse.json(

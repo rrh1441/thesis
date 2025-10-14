@@ -3,8 +3,7 @@ import { ArrowUpRightSquare } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import type { Database } from '@/types/database';
+import { query } from '@/lib/db';
 
 interface CommunityThesis {
   id: string;
@@ -17,57 +16,47 @@ interface CommunityThesis {
   user_name: string;
 }
 
-type CommunityThesisRow = Database['public']['Tables']['theses']['Row'] & {
-  paper_trades: Array<
-    Pick<Database['public']['Tables']['paper_trades']['Row'], 'pnl'>
-  > | null;
-  users: Pick<Database['public']['Tables']['users']['Row'], 'name'> | null;
+type CommunityRow = {
+  id: string;
+  text: string;
+  summary: string | null;
+  confidence_level: 'low' | 'medium' | 'high' | null;
+  created_at: string;
+  total_pnl: number | string | null;
+  trade_count: number | string | null;
+  user_name: string | null;
 };
 
 async function loadCommunityTheses(): Promise<CommunityThesis[]> {
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return [];
+  const rows = await query<CommunityRow>(
+    `
+      SELECT t.id,
+             t.text,
+             t.summary,
+             t.confidence_level,
+             t.created_at,
+             COALESCE(SUM(pt.pnl), 0) AS total_pnl,
+             COUNT(pt.id) AS trade_count,
+             u.name AS user_name
+      FROM theses t
+      LEFT JOIN paper_trades pt ON pt.thesis_id = t.id
+      LEFT JOIN users u ON u.id = t.user_id
+      GROUP BY t.id, t.text, t.summary, t.confidence_level, t.created_at, u.name
+      ORDER BY t.created_at DESC
+      LIMIT 10
+    `
+  );
 
-  const { data, error } = await supabase
-    .from('theses')
-    .select(
-      `
-        id,
-        text,
-        summary,
-        confidence_level,
-        created_at,
-        paper_trades (
-          pnl
-        ),
-        users (
-          name
-        )
-      `
-    )
-    .order('created_at', { ascending: false })
-    .limit(10);
-
-  if (error || !data) {
-    console.warn('[community-feed] unable to load data', error);
-    return [];
-  }
-
-  return (data as CommunityThesisRow[]).map((item) => {
-    const trades = item.paper_trades ?? [];
-    const totalPnl = trades.reduce((accumulator, trade) => accumulator + (trade.pnl ?? 0), 0);
-
-    return {
-      id: item.id,
-      text: item.text,
-      summary: item.summary,
-      confidence_level: item.confidence_level,
-      created_at: item.created_at,
-      total_pnl: totalPnl,
-      trade_count: trades.length,
-      user_name: item.users?.name ?? 'Anonymous analyst',
-    };
-  });
+  return rows.map((item) => ({
+    id: item.id,
+    text: item.text,
+    summary: item.summary,
+    confidence_level: item.confidence_level,
+    created_at: item.created_at,
+    total_pnl: Number(item.total_pnl ?? 0),
+    trade_count: Number(item.trade_count ?? 0),
+    user_name: item.user_name ?? 'Anonymous analyst',
+  }));
 }
 
 function ConfidenceBadge({ level }: { level: string | null }) {
@@ -96,7 +85,7 @@ async function CommunityFeedList() {
     return (
       <Card className="border-dashed border-zinc-800">
         <CardContent className="py-12 text-center text-sm text-zinc-500">
-          Seed theses will show up here once Supabase is configured.
+          Seed a few theses in Postgres to light up the community feed.
         </CardContent>
       </Card>
     );

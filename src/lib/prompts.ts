@@ -1,5 +1,7 @@
 export const THESIS_ALIGNMENT_SCHEMA = {
+  type: 'json_schema' as const,
   name: 'thesis_alignment',
+  strict: true,
   schema: {
     type: 'object',
     properties: {
@@ -11,9 +13,10 @@ export const THESIS_ALIGNMENT_SCHEMA = {
           properties: {
             name: { type: 'string' },
             direction: { enum: ['positive', 'negative', 'neutral'] },
-            notes: { type: 'string' },
+            notes: { type: ['string', 'null'] },
           },
-          required: ['name', 'direction'],
+          required: ['name', 'direction', 'notes'],
+          additionalProperties: false,
         },
       },
       tickers_long: {
@@ -24,10 +27,11 @@ export const THESIS_ALIGNMENT_SCHEMA = {
             symbol: { type: 'string' },
             conviction: { enum: ['low', 'medium', 'high'] },
             rationale: { type: 'string' },
-            suggested_weight: { type: 'number' },
-            confidence: { enum: ['low', 'medium', 'high'] },
+            suggested_weight: { type: ['number', 'null'] },
+            confidence: { enum: ['low', 'medium', 'high', null] },
           },
-          required: ['symbol', 'conviction', 'rationale'],
+          required: ['symbol', 'conviction', 'rationale', 'suggested_weight', 'confidence'],
+          additionalProperties: false,
         },
       },
       tickers_short: {
@@ -38,10 +42,11 @@ export const THESIS_ALIGNMENT_SCHEMA = {
             symbol: { type: 'string' },
             conviction: { enum: ['low', 'medium', 'high'] },
             rationale: { type: 'string' },
-            suggested_weight: { type: 'number' },
-            confidence: { enum: ['low', 'medium', 'high'] },
+            suggested_weight: { type: ['number', 'null'] },
+            confidence: { enum: ['low', 'medium', 'high', null] },
           },
-          required: ['symbol', 'conviction', 'rationale'],
+          required: ['symbol', 'conviction', 'rationale', 'suggested_weight', 'confidence'],
+          additionalProperties: false,
         },
       },
       rationale: { type: 'string' },
@@ -60,7 +65,10 @@ export const THESIS_ALIGNMENT_SCHEMA = {
       'tickers_long',
       'tickers_short',
       'rationale',
+      'confidence_notes',
+      'macro_signals',
     ],
+    additionalProperties: false,
   },
 };
 
@@ -70,7 +78,9 @@ Return clear, concise, and actionable instruments while calling out areas of unc
 `.trim();
 
 export const THESIS_REVIEW_SCHEMA = {
+  type: 'json_schema' as const,
   name: 'thesis_review',
+  strict: true,
   schema: {
     type: 'object',
     properties: {
@@ -95,10 +105,11 @@ export const THESIS_REVIEW_SCHEMA = {
         items: { type: 'string' },
       },
       confidence_level: {
-        enum: ['low', 'medium', 'high'],
+        enum: ['low', 'medium', 'high', null],
       },
     },
-    required: ['pros', 'cons', 'related_themes'],
+    required: ['pros', 'cons', 'related_themes', 'historical_analogs', 'counter_theses', 'confidence_level'],
+    additionalProperties: false,
   },
 };
 
