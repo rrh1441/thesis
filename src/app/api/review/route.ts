@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const json = await request.json();
     const { thesis_id, summary } = requestSchema.parse(json);
 
-    let thesisSummary = summary;
+    let thesisSummary: string | undefined = summary;
 
     if (!thesisSummary && thesis_id) {
       const rows = await query<{ summary: string | null }>(
@@ -22,7 +22,8 @@ export async function POST(request: Request) {
         [thesis_id]
       );
 
-      thesisSummary = rows[0]?.summary ?? null;
+      const dbSummary = rows[0]?.summary ?? undefined;
+      thesisSummary = dbSummary ?? undefined;
     }
 
     if (!thesisSummary) {
