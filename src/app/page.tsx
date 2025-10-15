@@ -103,7 +103,7 @@ export default function Home() {
           <form className="space-y-6" onSubmit={handleHeroSubmit} spellCheck={false}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                <span className="text-2xl font-light tracking-tight text-[#A1A1AA] sm:text-3xl lg:text-5xl">
+                <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-5xl">
                   I think
                 </span>
                 <input
@@ -308,7 +308,7 @@ export default function Home() {
         <div className="mx-auto w-full max-w-4xl">
         <form className="mb-16 flex flex-col gap-4 lg:flex-row lg:items-center" onSubmit={handleFooterSubmit}>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <span className="text-xl font-light tracking-tight text-[#A1A1AA] sm:text-2xl lg:text-3xl">
+            <span className="text-xl font-semibold tracking-tight text-white sm:text-2xl lg:text-3xl">
               I think
             </span>
             <input
