@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import type { QueryResultRow } from 'pg';
 
 let pool: Pool | null = null;
 
@@ -20,7 +21,12 @@ export function getDb() {
   return pool;
 }
 
-export async function query<T>(text: string, params?: Array<string | number | boolean | null>) {
+type QueryParam = string | number | boolean | null;
+
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params?: QueryParam[]
+) {
   const client = await getDb().connect();
 
   try {
