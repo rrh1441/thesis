@@ -150,7 +150,6 @@ export function CommunityFeed() {
           </Card>
         }
       >
-        {/* @ts-expect-error Async Server Component */}
         <CommunityFeedList />
       </Suspense>
     </section>
