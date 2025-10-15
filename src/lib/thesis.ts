@@ -79,8 +79,9 @@ export async function generateThesisAlignment(userThesis: string) {
 
   const output =
     response.output_text ??
-    (response.output && response.output.length > 0
-      ? response.output[0].content?.[0]?.['text']
+    (Array.isArray(response.output)
+      ? response.output.find((item) => 'content' in item && Array.isArray(item.content))
+          ?.content?.find((chunk) => 'text' in chunk)?.['text'] ?? null
       : null);
 
   if (!output) {
@@ -121,8 +122,9 @@ export async function generateThesisReview(
 
   const output =
     response.output_text ??
-    (response.output && response.output.length > 0
-      ? response.output[0].content?.[0]?.['text']
+    (Array.isArray(response.output)
+      ? response.output.find((item) => 'content' in item && Array.isArray(item.content))
+          ?.content?.find((chunk) => 'text' in chunk)?.['text'] ?? null
       : null);
 
   if (!output) {
