@@ -102,8 +102,8 @@ export default function Home() {
             {/* Input + CTA */}
           <form className="space-y-6" onSubmit={handleHeroSubmit} spellCheck={false}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-              <div className="flex flex-1 items-center gap-3">
-                <span className="whitespace-nowrap text-3xl font-light tracking-tight text-[#A1A1AA] lg:text-5xl">
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <span className="text-2xl font-light tracking-tight text-[#A1A1AA] sm:text-3xl lg:text-5xl">
                   I think
                 </span>
                 <input
@@ -113,7 +113,7 @@ export default function Home() {
                   onFocus={() => setFocusedInput(true)}
                   onBlur={() => setFocusedInput(false)}
                   placeholder="the economy is going to get better"
-                  className={`flex-1 bg-transparent px-4 py-4 text-2xl font-light text-white outline-none transition-all duration-300 placeholder:text-[#3F3F46] lg:text-3xl ${
+                  className={`w-full bg-transparent px-5 py-3 text-lg font-light text-white outline-none transition-all duration-300 placeholder:text-[#3F3F46] sm:flex-1 sm:text-xl lg:text-2xl ${
                     focusedInput
                       ? 'border-b-2 border-[#4ADE80] shadow-[0_4px_20px_rgba(74,222,128,0.15)]'
                       : 'border-b-2 border-[#27272A]'
@@ -306,23 +306,23 @@ export default function Home() {
       {/* Footer CTA */}
       <section className="border-t border-[#18181B] px-6 py-24">
         <div className="mx-auto w-full max-w-4xl">
-          <form className="mb-16 flex flex-col gap-4 lg:flex-row lg:items-center" onSubmit={handleFooterSubmit}>
-            <div className="flex flex-1 items-center gap-3">
-              <span className="whitespace-nowrap text-2xl font-light tracking-tight text-[#A1A1AA] lg:text-3xl">
-                I think
-              </span>
-              <input
-                type="text"
-                value={footerBelief}
-                onChange={(event) => setFooterBelief(event.target.value)}
-                placeholder="your next big thesis…"
-                className="flex-1 border-b border-[#27272A] bg-transparent px-4 py-3 text-xl font-light text-white outline-none transition-colors duration-300 placeholder:text-[#3F3F46] focus:border-[#4ADE80] lg:text-2xl"
-              />
-            </div>
-            <button
-              type="submit"
-              className="rounded-lg bg-[#4ADE80] px-8 py-3 text-base font-medium text-[#050505] transition-all duration-200 hover:bg-[#3DBD6E] hover:shadow-[0_8px_30px_rgba(74,222,128,0.4)]"
-            >
+        <form className="mb-16 flex flex-col gap-4 lg:flex-row lg:items-center" onSubmit={handleFooterSubmit}>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <span className="text-xl font-light tracking-tight text-[#A1A1AA] sm:text-2xl lg:text-3xl">
+              I think
+            </span>
+            <input
+              type="text"
+              value={footerBelief}
+              onChange={(event) => setFooterBelief(event.target.value)}
+              placeholder="your next big thesis…"
+              className="w-full border-b border-[#27272A] bg-transparent px-4 py-3 text-lg font-light text-white outline-none transition-colors duration-300 placeholder:text-[#3F3F46] focus:border-[#4ADE80] sm:flex-1 sm:text-xl lg:text-2xl"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-lg bg-[#4ADE80] px-8 py-3 text-base font-medium text-[#050505] transition-all duration-200 hover:bg-[#3DBD6E] hover:shadow-[0_8px_30px_rgba(74,222,128,0.4)]"
+          >
               Start testing
             </button>
           </form>

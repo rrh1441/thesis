@@ -289,7 +289,7 @@ export default function ThesisLanding() {
             </div>
             <div className="text-xs text-[#52525B]">
               Paper trading only — not financial advice.
-            </div>
+            </div> 
           </div>
         </div>
       </section>
