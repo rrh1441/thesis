@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { ResponseOutputMessage } from 'openai/resources/responses/responses';
+
 import { getOpenAIClient } from '@/lib/openai';
 import {
   THESIS_ALIGNMENT_SCHEMA,
@@ -80,7 +82,11 @@ export async function generateThesisAlignment(userThesis: string) {
   const output =
     response.output_text ??
     (Array.isArray(response.output)
-      ? response.output.find((item) => 'content' in item && Array.isArray(item.content))
+      ? response.output
+          .find(
+            (item): item is ResponseOutputMessage =>
+              typeof item === 'object' && item !== null && 'type' in item && item.type === 'message'
+          )
           ?.content?.find((chunk) => 'text' in chunk)?.['text'] ?? null
       : null);
 
@@ -123,7 +129,11 @@ export async function generateThesisReview(
   const output =
     response.output_text ??
     (Array.isArray(response.output)
-      ? response.output.find((item) => 'content' in item && Array.isArray(item.content))
+      ? response.output
+          .find(
+            (item): item is ResponseOutputMessage =>
+              typeof item === 'object' && item !== null && 'type' in item && item.type === 'message'
+          )
           ?.content?.find((chunk) => 'text' in chunk)?.['text'] ?? null
       : null);
 
