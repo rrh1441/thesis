@@ -8,8 +8,8 @@ type CommunityRow = {
   summary: string | null;
   confidence_level: 'low' | 'medium' | 'high' | null;
   created_at: string;
-  total_pnl: number;
-  trade_count: number;
+  total_pnl: number | string | null;
+  trade_count: number | string | null;
   user_name: string | null;
 };
 
@@ -34,7 +34,7 @@ export async function GET() {
       `
     );
 
-    const data = rows.map((row) => ({
+    const data = rows.map((row: CommunityRow) => ({
       id: row.id,
       text: row.text,
       summary: row.summary,
