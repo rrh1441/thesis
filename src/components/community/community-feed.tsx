@@ -47,7 +47,7 @@ async function loadCommunityTheses(): Promise<CommunityThesis[]> {
     `
   );
 
-  return rows.map((item) => ({
+  return rows.map((item: CommunityRow) => ({
     id: item.id,
     text: item.text,
     summary: item.summary,
